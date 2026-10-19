@@ -9,7 +9,7 @@
         </a>
 
         <h2 class="text-2xl font-bold text-slate-800">
-            Tambah Obat
+            Edit Obat
         </h2>
     </div>
 
