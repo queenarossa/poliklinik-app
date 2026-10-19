@@ -15,6 +15,14 @@
         </a>
     </div>
 
+    {{-- Alert Flash Message --}}
+    @if (session('message'))
+    <div class="alert alert-{{ session('type', 'success') }} alert-dismissible mb-4 rounded-xl shadow-sm" role="alert">
+        <i class="fas fa-circle-check"></i>
+        <span>{{ session('message') }}</span>
+    </div>
+    @endif
+
     {{-- Card --}}
     <div class="card bg-base-100 shadow-md rounded-2 border">
         <div class="card-body p-0">

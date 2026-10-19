@@ -23,7 +23,7 @@ class ObatController extends Controller
     {
         $request->validate([
             'nama_obat' => 'required|string',
-            'kemasan' => 'required|string',
+            'kemasan' => 'nullable|string',
             'harga' => 'required|integer',
         ]);
 
@@ -46,7 +46,8 @@ class ObatController extends Controller
             'obat' => $obat
         ]);
     }
-public function update(Request $request, string $id)
+
+    public function update(Request $request, string $id)
     {
         $request->validate([
             'nama_obat' => 'required|string',
