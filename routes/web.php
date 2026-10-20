@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\DokterController;
 use App\Http\Controllers\Admin\PasienController;
 use App\Http\Controllers\Admin\ObatController;
 use App\Http\Controllers\Dokter\JadwalPeriksaController;
+use App\Http\Controllers\Dokter\PeriksaPasienController;
 use Illuminate\Support\Facades\Route;
 
 // Public Routes
@@ -39,6 +40,15 @@ Route::middleware(['auth', 'role:dokter'])->prefix('dokter')->group(function () 
     })->name('dokter.dashboard');
 
     Route::resource('jadwal-periksa', JadwalPeriksaController::class);
+
+    Route::get('/periksa-pasien', [PeriksaPasienController::class, 'index'])
+        ->name('periksa-pasien.index');
+
+    Route::post('/periksa-pasien', [PeriksaPasienController::class, 'store'])
+        ->name('periksa-pasien.store');
+
+    Route::get('/periksa-pasien/{id}', [PeriksaPasienController::class, 'create'])
+        ->name('periksa-pasien.create');
 });
 
 // Pasien Routes
@@ -46,4 +56,9 @@ Route::middleware(['auth', 'role:pasien'])->prefix('pasien')->group(function () 
     Route::get('/dashboard', function () {
         return view('pasien.dashboard');
     })->name('admin.dashboard'); // Sesuaikan name route jika diperlukan (misal: pasien.dashboard)
+    
+    Route::get('/daftar', [PasienPoliController::class, 'get'])->name('pasien.daftar');
+
+    Route::post('/daftar', [PasienPoliController::class, 'submit'])
+        ->name('pasien.daftar.submit');
 });
