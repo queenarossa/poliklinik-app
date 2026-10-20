@@ -9,17 +9,25 @@ use App\Models\Obat;
 use App\Models\Periksa;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class PeriksaPasienController extends Controller
 {
+    // Biaya jasa dokter (ditambahkan ke total harga obat)
+    private const BIAYA_JASA_DOKTER = 150000;
+
+    // Daftar pasien milik dokter yang sedang login
+    private function queryPasienDokter()
+    {
+        return DaftarPoli::whereHas('jadwalPeriksa', function ($q) {
+            $q->where('id_dokter', Auth::id());
+        });
+    }
+
     public function index()
     {
-        $dokterId = Auth::id();
-
-        $daftarPasien = DaftarPoli::with(['pasien', 'jadwalPeriksa', 'periksas'])
-            ->whereHas('jadwalPeriksa', function ($query) use ($dokterId) {
-                $query->where('id_dokter', $dokterId);
-            })
+        $daftarPasien = $this->queryPasienDokter()
+            ->with(['pasien', 'periksas'])
             ->orderBy('no_antrian')
             ->get();
 
@@ -28,35 +36,63 @@ class PeriksaPasienController extends Controller
 
     public function create($id)
     {
+        // Hanya boleh membuka pasien milik dokter ini
+        $daftarPoli = $this->queryPasienDokter()
+            ->with(['pasien', 'periksas'])
+            ->findOrFail($id);
+
+        // Pasien yang sudah diperiksa tidak boleh diperiksa lagi
+        if ($daftarPoli->periksas->isNotEmpty()) {
+            return redirect()
+                ->route('periksa-pasien.index')
+                ->with('error', 'Pasien ini sudah diperiksa.');
+        }
+
         $obats = Obat::all();
-        return view('dokter.periksa-pasien.create', compact('obats', 'id'));
+        $biayaJasa = self::BIAYA_JASA_DOKTER;
+
+        return view('dokter.periksa-pasien.create', compact('daftarPoli', 'obats', 'biayaJasa'));
     }
 
     public function store(Request $request)
     {
         $request->validate([
-            'obat_json' => 'required',
-            'catatan' => 'nullable|string',
-            'biaya_periksa' => 'required|integer',
+            'id_daftar_poli' => 'required|exists:daftar_poli,id',
+            'obat'           => 'required|array|min:1',
+            'obat.*'         => 'exists:obat,id',
+            'catatan'        => 'nullable|string',
         ]);
 
-        $obatIds = json_decode($request->obat_json, true);
+        $daftarPoli = $this->queryPasienDokter()
+            ->with('periksas')
+            ->findOrFail($request->id_daftar_poli);
 
-        $periksa = Periksa::create([
-            'id_daftar_poli' => $request->id_daftar_poli,
-            'tgl_periksa' => now(),
-            'catatan' => $request->catatan,
-            'biaya_periksa' => $request->biaya_periksa + 150000,
-        ]);
+        if ($daftarPoli->periksas->isNotEmpty()) {
+            return redirect()
+                ->route('periksa-pasien.index')
+                ->with('error', 'Pasien ini sudah diperiksa.');
+        }
 
-        if (is_array($obatIds)) {
+        $obatIds = array_unique($request->obat);
+
+        DB::transaction(function () use ($request, $daftarPoli, $obatIds) {
+            // Total dihitung di server dari harga obat di database
+            $totalObat = Obat::whereIn('id', $obatIds)->sum('harga');
+
+            $periksa = Periksa::create([
+                'id_daftar_poli' => $daftarPoli->id,
+                'tgl_periksa'    => now(),
+                'catatan'        => $request->catatan,
+                'biaya_periksa'  => $totalObat + self::BIAYA_JASA_DOKTER,
+            ]);
+
             foreach ($obatIds as $idObat) {
                 DetailPeriksa::create([
                     'id_periksa' => $periksa->id,
-                    'id_obat' => $idObat,
+                    'id_obat'    => $idObat,
                 ]);
             }
-        }
+        });
 
         return redirect()
             ->route('periksa-pasien.index')
