@@ -117,18 +117,25 @@
         </div>
     </div>
 
+    @php
+        $obatData = $obats->map(function ($o) {
+            return [
+                'id' => $o->id,
+                'nama' => $o->nama_obat,
+                'kemasan' => $o->kemasan,
+                'harga' => (int) $o->harga,
+            ];
+        })->values();
+        $obatLama = array_map('intval', old('obat', []));
+    @endphp
+
     <script>
-        const dataObat = @json($obats->map(fn ($o) => [
-            'id' => $o->id,
-            'nama' => $o->nama_obat,
-            'kemasan' => $o->kemasan,
-            'harga' => (int) $o->harga,
-        ])->values());
+        const dataObat = @json($obatData);
 
         const biayaJasa = {{ (int) $biayaJasa }};
 
         // Dipulihkan jika validasi gagal
-        let terpilih = @json(array_map('intval', old('obat', [])));
+        let terpilih = @json($obatLama);
 
         const select = document.getElementById('pilih-obat');
         const daftar = document.getElementById('daftar-obat');

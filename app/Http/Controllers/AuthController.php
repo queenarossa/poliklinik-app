@@ -16,20 +16,28 @@ class AuthController extends Controller
 
     public function login(Request $request)
     {
-        $credentials = $request->only('email', 'password');
+        $credentials = $request->validate([
+            'email'    => 'required|email',
+            'password' => 'required',
+        ]);
 
         if (Auth::attempt($credentials)) {
+            $request->session()->regenerate();
+
             $user = Auth::user();
             if ($user->role === 'admin') {
                 return redirect()->route('admin.dashboard');
-            } else if ($user->role === 'dokter') {
+            } elseif ($user->role === 'dokter') {
                 return redirect()->route('dokter.dashboard');
-            } else {
-                return redirect()->route('pasien.dashboard');
             }
+
+            return redirect()->route('pasien.dashboard');
         }
 
-        return back()->withErrors(['email', 'Email atau password salah']);
+        // Format yang benar: ['nama_field' => 'pesan']
+        return back()
+            ->withErrors(['email' => 'Email atau password salah'])
+            ->onlyInput('email');
     }
 
     public function showRegister()
@@ -48,9 +56,7 @@ class AuthController extends Controller
             'password' => 'required|min:6'
         ]);
 
-        $lastPasien = User::where('role', 'pasien')->orderBy('id', 'desc')->first();
-        $lastId = $lastPasien ? $lastPasien->id + 1 : 1;
-        $no_rm = date('Ym') . '-' . str_pad($lastId, 3, '0', STR_PAD_LEFT);
+        $no_rm = User::generateNoRm();
 
         User::create([
             'nama' => $request->nama,
@@ -66,9 +72,12 @@ class AuthController extends Controller
         return redirect()->route('login')->with('success', 'Registrasi berhasil! Silakan login.');
     }
 
-    public function logout()
+    public function logout(Request $request)
     {
         Auth::logout();
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+
         return redirect()->route('login');
     }
 }
