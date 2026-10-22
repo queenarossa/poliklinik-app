@@ -3,9 +3,10 @@
 namespace App\Exports;
 
 use App\Models\Periksa;
+use Illuminate\Support\Collection;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\ShouldAutoSize;
-use Maatwebsite\Excel\Concerns\WithColumnFormats;
+use Maatwebsite\Excel\Concerns\WithColumnFormatting;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
 use Maatwebsite\Excel\Concerns\WithStyles;
@@ -14,7 +15,7 @@ use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 /**
  * Riwayat pasien yang pernah diperiksa oleh dokter yang sedang login saja.
  */
-class RiwayatPasienExport implements FromCollection, WithHeadings, WithMapping, ShouldAutoSize, WithStyles, WithColumnFormats
+class RiwayatPasienExport implements FromCollection, WithHeadings, WithMapping, ShouldAutoSize, WithStyles, WithColumnFormatting
 {
     private int $no = 0;
 
@@ -28,7 +29,7 @@ class RiwayatPasienExport implements FromCollection, WithHeadings, WithMapping, 
     {
     }
 
-    public function collection()
+    public function collection(): Collection
     {
         return Periksa::whereHas('daftarPoli.jadwalPeriksa', function ($q) {
             $q->where('id_dokter', $this->idDokter);

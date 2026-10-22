@@ -87,6 +87,12 @@
                 Pembayaran
             </a>
 
+            <a href="{{ route('admin.profil.edit') }}"
+                class="{{ $baseLink }} {{ request()->routeIs('admin.profil.*') ? $active : $inactive }}">
+                <i class="fas fa-user-gear w-4 text-center"></i>
+                Profil
+            </a>
+
         </div>
         @endif
 
@@ -115,6 +121,12 @@
                 class="{{ $baseLink }} {{ request()->routeIs('pasien.pembayaran.*') ? $active : $inactive }}">
                 <i class="fas fa-file-invoice-dollar w-4 text-center"></i>
                 Pembayaran
+            </a>
+
+            <a href="{{ route('pasien.profil.edit') }}"
+                class="{{ $baseLink }} {{ request()->routeIs('pasien.profil.*') ? $active : $inactive }}">
+                <i class="fas fa-user-gear w-4 text-center"></i>
+                Profil
             </a>
 
         </div>
@@ -150,6 +162,12 @@
                 class="{{ $baseLink }} {{ request()->routeIs('riwayat-pasien.*') ? $active : $inactive }}">
                 <i class="fas fa-clock-rotate-left w-4 text-center"></i>
                 Riwayat Pasien
+            </a>
+
+            <a href="{{ route('dokter.profil.edit') }}"
+                class="{{ $baseLink }} {{ request()->routeIs('dokter.profil.*') ? $active : $inactive }}">
+                <i class="fas fa-user-gear w-4 text-center"></i>
+                Profil
             </a>
 
 

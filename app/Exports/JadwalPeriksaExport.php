@@ -3,6 +3,7 @@
 namespace App\Exports;
 
 use App\Models\JadwalPeriksa;
+use Illuminate\Support\Collection;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\ShouldAutoSize;
 use Maatwebsite\Excel\Concerns\WithHeadings;
@@ -21,7 +22,7 @@ class JadwalPeriksaExport implements FromCollection, WithHeadings, WithMapping, 
     {
     }
 
-    public function collection()
+    public function collection(): Collection
     {
         return JadwalPeriksa::where('id_dokter', $this->idDokter)->orderBy('hari')->get();
     }

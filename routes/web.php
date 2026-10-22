@@ -3,6 +3,7 @@
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ExportController;
 use App\Http\Controllers\NotifikasiController;
+use App\Http\Controllers\ProfilController;
 use App\Http\Controllers\Admin\AdminPoliController;
 use App\Http\Controllers\Admin\DokterController;
 use App\Http\Controllers\Admin\PasienController;
@@ -104,5 +105,16 @@ foreach (['admin', 'dokter', 'pasien'] as $role) {
             ->name($role . '.notifikasi.baca-semua');
         Route::post('/notifikasi/{id}/baca', [NotifikasiController::class, 'baca'])
             ->name($role . '.notifikasi.baca');
+    });
+}
+
+// Profil & ganti password (semua role; tiap role memakai awalan URL sendiri agar sidebar tampil benar)
+foreach (['admin', 'dokter', 'pasien'] as $role) {
+    Route::middleware(['auth', 'role:' . $role])->prefix($role)->group(function () use ($role) {
+        Route::get('/profil', [ProfilController::class, 'edit'])
+            ->name($role . '.profil.edit');
+        Route::put('/profil/password', [ProfilController::class, 'updatePassword'])
+            ->middleware('throttle:6,1')   // batasi percobaan menebak password lama
+            ->name($role . '.profil.password');
     });
 }

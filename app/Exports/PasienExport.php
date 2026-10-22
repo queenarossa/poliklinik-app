@@ -3,6 +3,7 @@
 namespace App\Exports;
 
 use App\Models\User;
+use Illuminate\Support\Collection;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\ShouldAutoSize;
 use Maatwebsite\Excel\Concerns\WithHeadings;
@@ -14,7 +15,7 @@ class PasienExport implements FromCollection, WithHeadings, WithMapping, ShouldA
 {
     private int $no = 0;
 
-    public function collection()
+    public function collection(): Collection
     {
         return User::where('role', 'pasien')->orderBy('nama')->get();
     }

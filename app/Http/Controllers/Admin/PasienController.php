@@ -1,85 +1,92 @@
 <?php
 
-namespace App\Http\Controllers\Pasien;
+namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\DaftarPoli;
-use App\Models\JadwalPeriksa;
-use App\Models\Poli;
 use App\Models\User;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 
-class PoliController extends Controller
+class PasienController extends Controller
 {
-    public function get()
+    public function index()
     {
-        $user = Auth::user();
-
-        // Pasien lama (mis. dari seeder) yang belum punya no. RM dibuatkan otomatis
-        if (empty($user->no_rm)) {
-            $user->no_rm = User::generateNoRm($user->created_at);
-            $user->save();
-        }
-        $polis = Poli::all();
-        $jadwals = JadwalPeriksa::with('dokter.poli')->get();
-
-        // Riwayat pendaftaran milik pasien yang sedang login
-        $pendaftarans = DaftarPoli::with(['jadwalPeriksa.dokter.poli', 'periksas'])
-            ->where('id_pasien', $user->id)
-            ->orderByDesc('id')
-            ->get();
-
-        return view('pasien.daftar', compact('user', 'polis', 'jadwals', 'pendaftarans'));
+        $pasiens = User::where('role', 'pasien')->with('poli')->get();
+        return view('admin.pasien.index', compact('pasiens'));
     }
 
-    public function submit(Request $request)
+    public function create()
+    {
+        return view('admin.pasien.create');
+    }
+
+    public function store(Request $request)
     {
         $request->validate([
-            'id_poli'   => 'required|exists:poli,id',
-            'id_jadwal' => 'required|exists:jadwal_periksa,id',
-            'keluhan'   => 'required|string',
+            'nama' => 'required|string|max:255',
+            'alamat' => 'required|string',
+            'no_ktp' => 'required|string|max:16|unique:users,no_ktp',
+            'no_hp' => 'required|string|max:15',
+            'email' => 'required|string|email|unique:users,email',
+            'password' => 'required|string|min:6',
         ]);
 
-        // Pastikan jadwal yang dipilih memang milik dokter di poli tersebut
-        $jadwal = JadwalPeriksa::with('dokter')->findOrFail($request->id_jadwal);
-        if ((int) optional($jadwal->dokter)->id_poli !== (int) $request->id_poli) {
-            return back()
-                ->withInput()
-                ->with('error', 'Jadwal yang dipilih tidak sesuai dengan poli.');
+        User::create([
+            'nama' => $request->nama,
+            'alamat' => $request->alamat,
+            'no_ktp' => $request->no_ktp,
+            'no_hp' => $request->no_hp,
+            'email' => $request->email,
+            'password' => Hash::make($request->password),
+            'role' => 'pasien',
+            'no_rm' => User::generateNoRm(),
+        ]);
+
+        return redirect()->route('pasien.index')->with('message', 'Data Pasien berhasil di Tambah')->with('type', 'success');
+    }
+
+    public function edit(User $pasien)
+    {
+        return view('admin.pasien.edit', compact('pasien'));
+    }
+
+    public function update(Request $request, User $pasien)
+    {
+        $request->validate([
+            'nama' => 'required|string|max:255',
+            'alamat' => 'required|string',
+            'no_ktp' => 'required|string|max:16|unique:users,no_ktp,' . $pasien->id,
+            'no_hp' => 'required|string|max:15',
+            'email' => 'required|string|email|unique:users,email,' . $pasien->id,
+            'password' => 'required|string|min:6',
+        ]);
+
+        $updateData = [
+            'nama' => $request->nama,
+            'alamat' => $request->alamat,
+            'no_ktp' => $request->no_ktp,
+            'no_hp' => $request->no_hp,
+            'email' => $request->email,
+        ];
+
+        if ($request->filled('password')) {
+            $pasien->password = Hash::make($request->password);
         }
 
-        // id pasien diambil dari user yang login, bukan dari form
-        $idPasien = Auth::id();
-
-        // Cegah daftar dua kali di jadwal yang sama selama belum diperiksa
-        $sudahTerdaftar = DaftarPoli::where('id_pasien', $idPasien)
-            ->where('id_jadwal', $jadwal->id)
-            ->whereDoesntHave('periksas')
-            ->exists();
-
-        if ($sudahTerdaftar) {
-            return back()
-                ->withInput()
-                ->with('error', 'Anda sudah terdaftar pada jadwal ini dan belum diperiksa.');
-        }
-
-        DB::transaction(function () use ($request, $jadwal, $idPasien) {
-            $antrianTerakhir = DaftarPoli::where('id_jadwal', $jadwal->id)
-                ->lockForUpdate()
-                ->max('no_antrian');
-
-            DaftarPoli::create([
-                'id_pasien'  => $idPasien,
-                'id_jadwal'  => $jadwal->id,
-                'keluhan'    => $request->keluhan,
-                'no_antrian' => ($antrianTerakhir ?? 0) + 1,
-            ]);
-        });
+        $pasien->update($updateData);
 
         return redirect()
-            ->route('pasien.daftar')
-            ->with('success', 'Berhasil mendaftar ke poli.');
+            ->route('pasien.index')
+            ->with('message', 'Data Pasien berhasil di Ubah>')
+            ->with('type', 'success');
+    }
+
+    public function destroy(User $pasien)
+    {
+        $pasien->delete();
+        return redirect()
+            ->route('pasien.index')
+            ->with('message', 'Data Pasien berhasil dihapus')
+            ->with('type', 'success');
     }
 }

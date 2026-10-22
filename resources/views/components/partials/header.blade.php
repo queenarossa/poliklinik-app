@@ -98,8 +98,8 @@
         </div>
     </div>
 
-    {{-- User Info --}}
-    <div class="flex items-center gap-3">
+    {{-- User Info (klik untuk membuka Profil) --}}
+    <a href="{{ route(auth()->user()->role . '.profil.edit') }}" class="flex items-center gap-3 hover:opacity-80 transition" title="Profil &amp; ganti password">
 
         <div class="text-right hidden sm:block">
             <div class="text-sm font-semibold leading-tight">
@@ -117,7 +117,7 @@
                 </span>
             </div>
         </div>
-    </div>
+    </a>
 
 </header>
 
