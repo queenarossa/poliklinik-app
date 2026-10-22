@@ -81,6 +81,12 @@
                 Manajemen Obat
             </a>
 
+            <a href="{{ route('admin.pembayaran.index') }}"
+                class="{{ $baseLink }} {{ request()->routeIs('admin.pembayaran.*') ? $active : $inactive }}">
+                <i class="fas fa-file-invoice-dollar w-4 text-center"></i>
+                Pembayaran
+            </a>
+
         </div>
         @endif
 
@@ -103,6 +109,12 @@
                 class="{{ $baseLink }} {{ request()->routeIs('pasien.daftar*') ? $active : $inactive }}">
                 <i class="fas fa-notes-medical w-4 text-center"></i>
                 Pendaftaran Periksa
+            </a>
+
+            <a href="{{ route('pasien.pembayaran.index') }}"
+                class="{{ $baseLink }} {{ request()->routeIs('pasien.pembayaran.*') ? $active : $inactive }}">
+                <i class="fas fa-file-invoice-dollar w-4 text-center"></i>
+                Pembayaran
             </a>
 
         </div>

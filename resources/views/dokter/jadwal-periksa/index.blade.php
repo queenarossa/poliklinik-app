@@ -6,11 +6,19 @@
             Jadwal Periksa
         </h2>
 
-        <a href="{{ route('jadwal-periksa.create') }}" class="btn bg-[#2d4499] hover:bg-[#1e2d6b] 
+        <div class="flex items-center gap-2">
+            <a href="{{ route('dokter.export.jadwal') }}" class="inline-flex items-center gap-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700
+                  text-white text-sm font-semibold rounded-xl transition">
+                <i class="fas fa-file-excel text-sm"></i>
+                Export Excel
+            </a>
+
+            <a href="{{ route('jadwal-periksa.create') }}" class="btn bg-[#2d4499] hover:bg-[#1e2d6b] 
                   text-white border-none rounded-lg px-5">
             <i class="fas fa-plus"></i>
             Tambah Jadwal Periksa
         </a>
+        </div>
     </div>
 
     {{-- Alert Flash Message --}}

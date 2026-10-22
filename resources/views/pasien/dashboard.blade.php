@@ -3,50 +3,7 @@
     @php
         $punyaAntrian = $antrianAktif !== null;
         $idJadwalAktif = $punyaAntrian ? $antrianAktif->id_jadwal : null;
-
-        $jam = (int) now()->format('G');
-        $sapaan = match (true) {
-            $jam < 11 => 'Selamat pagi',
-            $jam < 15 => 'Selamat siang',
-            $jam < 18 => 'Selamat sore',
-            default   => 'Selamat malam',
-        };
-        $tanggal = now()->locale('id')->translatedFormat('l, d F Y');
     @endphp
-
-    {{-- Selamat Datang --}}
-    <div class="relative overflow-hidden rounded-2xl bg-white border border-slate-200 shadow-sm p-6 mb-6">
-        <div class="absolute -right-10 -top-10 w-40 h-40 rounded-full bg-indigo-50"></div>
-        <div class="absolute right-16 -bottom-12 w-28 h-28 rounded-full bg-blue-50"></div>
-
-        <div class="relative flex flex-col md:flex-row md:items-center md:justify-between gap-5">
-            <div class="flex items-center gap-4">
-                <div class="w-14 h-14 shrink-0 rounded-full bg-gradient-to-br from-indigo-600 to-blue-500 text-white
-                            flex items-center justify-center text-xl font-bold shadow">
-                    {{ strtoupper(substr($user->nama, 0, 1)) }}
-                </div>
-                <div>
-                    <p class="text-xs font-semibold text-slate-400 flex items-center gap-1.5">
-                        <i class="fas fa-calendar-day"></i> {{ $tanggal }} &middot; {{ $sapaan }}
-                    </p>
-                    <h2 class="text-2xl font-extrabold text-slate-800 leading-tight">
-                        Selamat datang, <span class="text-indigo-600">{{ $user->nama }}</span>
-                    </h2>
-                    <p class="text-sm text-slate-400">Semoga lekas sehat. Pantau antrian dan jadwal poliklinik Anda di sini.</p>
-                </div>
-            </div>
-
-            <div class="flex items-center gap-3 rounded-xl bg-slate-50 border border-slate-200 px-5 py-3 self-start md:self-auto">
-                <div class="w-10 h-10 rounded-lg bg-indigo-100 text-indigo-600 flex items-center justify-center">
-                    <i class="fas fa-id-card-clip"></i>
-                </div>
-                <div>
-                    <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">No. Rekam Medis</p>
-                    <p class="text-lg font-bold text-slate-800 tracking-wide">{{ $user->no_rm }}</p>
-                </div>
-            </div>
-        </div>
-    </div>
 
     {{-- Banner Antrian Aktif --}}
     @if ($punyaAntrian)
@@ -170,16 +127,20 @@
         const punyaAntrian = @json($punyaAntrian);
         const idJadwalAktif = @json($idJadwalAktif);
         const nomorSaya = @json($punyaAntrian ? $antrianAktif->no_antrian : null);
-        const INTERVAL_MS = 5000;
+
+        // Keadaan terakhir: { id_jadwal: nomor yang sedang dilayani }
+        let dilayaniSekarang = @json($dilayani);
 
         function tampilkan(dilayani) {
+            dilayaniSekarang = dilayani;
+
             // Tabel jadwal
             document.querySelectorAll('[data-dilayani]').forEach((el) => {
                 const v = dilayani[el.dataset.dilayani];
                 el.textContent = (v === undefined || v === null) ? '-' : v;
             });
 
-            // Banner
+            // Banner antrian aktif
             if (punyaAntrian) {
                 const v = dilayani[idJadwalAktif];
                 const bannerEl = document.getElementById('banner-dilayani');
@@ -198,7 +159,8 @@
             text.textContent = ok ? 'Live update' : 'Terputus';
         }
 
-        async function perbarui() {
+        // Sinkronisasi penuh ke server (juga memeriksa apakah antrian pasien sudah selesai)
+        async function sinkron() {
             if (document.hidden) return;
             try {
                 const res = await fetch(urlLive, {
@@ -208,21 +170,54 @@
                 if (!res.ok) throw new Error('HTTP ' + res.status);
                 const data = await res.json();
 
-                // Status antrian berubah (mis. pasien sudah diperiksa) -> muat ulang halaman
                 if (data.ada_antrian !== punyaAntrian) {
                     window.location.reload();
                     return;
                 }
-
                 tampilkan(data.dilayani || {});
-                setStatus(true);
             } catch (e) {
-                setStatus(false);
+                // abaikan, dicoba lagi pada sinkron berikutnya
             }
         }
 
-        tampilkan(@json($dilayani));
-        setInterval(perbarui, INTERVAL_MS);
+        tampilkan(dilayaniSekarang);
+
+        // Script modul (Vite/Echo) baru berjalan sebelum DOMContentLoaded
+        window.addEventListener('DOMContentLoaded', () => {
+            if (window.Echo) {
+                // Laravel Reverb (WebSocket): server yang mengirim, tidak perlu reload / polling cepat
+                window.Echo.channel('antrian').listen('.antrian.diperbarui', (e) => {
+                    const baru = Object.assign({}, dilayaniSekarang);
+                    if (e.dilayani === null || e.dilayani === undefined) {
+                        delete baru[e.id_jadwal];
+                    } else {
+                        baru[e.id_jadwal] = e.dilayani;
+                    }
+                    tampilkan(baru);
+                    setStatus(true);
+
+                    // Kalau jadwal ini milik antrian pasien, pastikan statusnya ikut disinkronkan
+                    if (punyaAntrian && Number(e.id_jadwal) === Number(idJadwalAktif)) {
+                        sinkron();
+                    }
+                });
+
+                // Indikator koneksi WebSocket
+                const koneksi = window.Echo.connector && window.Echo.connector.pusher
+                    ? window.Echo.connector.pusher.connection : null;
+                if (koneksi) {
+                    koneksi.bind('connected', () => setStatus(true));
+                    koneksi.bind('disconnected', () => setStatus(false));
+                    koneksi.bind('unavailable', () => setStatus(false));
+                }
+
+                // Jaring pengaman: sinkron penuh tiap 30 detik (jika koneksi sempat terputus)
+                setInterval(sinkron, 30000);
+            } else {
+                // Echo/Reverb belum terpasang: pakai pembaruan berkala sebagai cadangan
+                setInterval(sinkron, 5000);
+            }
+        });
     </script>
 
 </x-layouts.app>

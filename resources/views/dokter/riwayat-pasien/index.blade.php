@@ -5,6 +5,12 @@
         <h2 class="text-2xl font-bold text-slate-800">
             Riwayat Pasien
         </h2>
+
+        <a href="{{ route('dokter.export.riwayat') }}" class="inline-flex items-center gap-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700
+                  text-white text-sm font-semibold rounded-xl transition">
+                <i class="fas fa-file-excel text-sm"></i>
+                Export Excel
+            </a>
     </div>
 
     {{-- Card --}}

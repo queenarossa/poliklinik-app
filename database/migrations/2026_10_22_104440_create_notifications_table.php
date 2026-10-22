@@ -1,34 +1,25 @@
 <?php
 
-namespace App\Http\Controllers;
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
 
-use Illuminate\Support\Facades\Auth;
-
-class NotifikasiController extends Controller
+return new class extends Migration
 {
-    // Semua query lewat relasi milik user yang login, jadi tidak mungkin
-    // melihat atau menandai notifikasi milik pengguna lain.
-
-    public function index()
+    public function up(): void
     {
-        $notifikasis = Auth::user()->notifications()->latest()->paginate(15);
-
-        return view('notifikasi.index', compact('notifikasis'));
+        Schema::create('notifications', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->string('type');
+            $table->morphs('notifiable');
+            $table->text('data');
+            $table->timestamp('read_at')->nullable();
+            $table->timestamps();
+        });
     }
 
-    public function baca(string $id)
+    public function down(): void
     {
-        // findOrFail lewat relasi: id milik orang lain -> 404
-        $notifikasi = Auth::user()->notifications()->findOrFail($id);
-        $notifikasi->markAsRead();
-
-        return back();
+        Schema::dropIfExists('notifications');
     }
-
-    public function bacaSemua()
-    {
-        Auth::user()->unreadNotifications->markAsRead();
-
-        return back();
-    }
-}
+};

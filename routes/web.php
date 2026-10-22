@@ -1,15 +1,18 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\ExportController;
 use App\Http\Controllers\NotifikasiController;
 use App\Http\Controllers\Admin\AdminPoliController;
 use App\Http\Controllers\Admin\DokterController;
 use App\Http\Controllers\Admin\PasienController;
 use App\Http\Controllers\Admin\ObatController;
+use App\Http\Controllers\Admin\PembayaranController as AdminPembayaranController;
 use App\Http\Controllers\Dokter\JadwalPeriksaController;
 use App\Http\Controllers\Dokter\PeriksaPasienController;
 use App\Http\Controllers\Dokter\RiwayatPasienController;
 use App\Http\Controllers\Pasien\DashboardController as PasienDashboardController;
+use App\Http\Controllers\Pasien\PembayaranController as PasienPembayaranController;
 use App\Http\Controllers\Pasien\PoliController as PasienPoliController;
 use Illuminate\Support\Facades\Route;
 
@@ -35,6 +38,17 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
     Route::resource('dokter', DokterController::class);
     Route::resource('pasien', PasienController::class);
     Route::resource('obat', ObatController::class);
+
+    // Verifikasi pembayaran
+    Route::get('/pembayaran', [AdminPembayaranController::class, 'index'])->name('admin.pembayaran.index');
+    Route::get('/pembayaran/{id}', [AdminPembayaranController::class, 'show'])->name('admin.pembayaran.show');
+    Route::post('/pembayaran/{id}/konfirmasi', [AdminPembayaranController::class, 'konfirmasi'])->name('admin.pembayaran.konfirmasi');
+    Route::get('/pembayaran/{id}/bukti', [AdminPembayaranController::class, 'bukti'])->name('admin.pembayaran.bukti');
+
+    // Export Excel
+    Route::get('/export/dokter', [ExportController::class, 'dokter'])->name('admin.export.dokter');
+    Route::get('/export/pasien', [ExportController::class, 'pasien'])->name('admin.export.pasien');
+    Route::get('/export/obat', [ExportController::class, 'obat'])->name('admin.export.obat');
 });
 
 // Dokter Routes
@@ -56,6 +70,10 @@ Route::middleware(['auth', 'role:dokter'])->prefix('dokter')->group(function () 
         ->name('riwayat-pasien.index');
     Route::get('/riwayat-pasien/{id}', [RiwayatPasienController::class, 'show'])
         ->name('riwayat-pasien.show');
+
+    // Export Excel (hanya data milik dokter yang login)
+    Route::get('/export/jadwal-periksa', [ExportController::class, 'jadwalPeriksa'])->name('dokter.export.jadwal');
+    Route::get('/export/riwayat-pasien', [ExportController::class, 'riwayatPasien'])->name('dokter.export.riwayat');
 });
 
 // Pasien Routes
@@ -69,6 +87,12 @@ Route::middleware(['auth', 'role:pasien'])->prefix('pasien')->group(function () 
         ->name('pasien.daftar');
     Route::post('/daftar', [PasienPoliController::class, 'submit'])
         ->name('pasien.daftar.submit');
+
+    // Pembayaran
+    Route::get('/pembayaran', [PasienPembayaranController::class, 'index'])->name('pasien.pembayaran.index');
+    Route::get('/pembayaran/{id}', [PasienPembayaranController::class, 'show'])->name('pasien.pembayaran.show');
+    Route::post('/pembayaran/{id}/upload', [PasienPembayaranController::class, 'upload'])->name('pasien.pembayaran.upload');
+    Route::get('/pembayaran/{id}/bukti', [PasienPembayaranController::class, 'bukti'])->name('pasien.pembayaran.bukti');
 });
 
 // Notifikasi (tiap role memakai awalan URL sendiri supaya sidebar tampil benar)

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Pasien;
 
 use App\Http\Controllers\Controller;
+use App\Events\AntrianDiperbarui;
 use App\Models\DaftarPoli;
 use App\Models\JadwalPeriksa;
 use App\Models\Poli;
@@ -69,6 +70,9 @@ class PoliController extends Controller
                 'no_antrian' => ($antrianTerakhir ?? 0) + 1,
             ]);
         });
+
+        // Kabari dashboard pasien lewat Reverb (jika antrian kosong, nomor ini langsung dilayani)
+        AntrianDiperbarui::kirim($jadwal->id);
 
         return redirect()
             ->route('pasien.daftar')
