@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Pasien;
 use App\Http\Controllers\Controller;
 use App\Models\DaftarPoli;
 use App\Models\JadwalPeriksa;
+use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
@@ -12,6 +13,14 @@ class DashboardController extends Controller
 {
     public function index()
     {
+        $user = Auth::user();
+
+        // Pasien lama (mis. dari seeder) yang belum punya no. RM dibuatkan otomatis
+        if (empty($user->no_rm)) {
+            $user->no_rm = User::generateNoRm($user->created_at);
+            $user->save();
+        }
+
         $antrianAktif = $this->antrianAktif();
         $dilayani = $this->nomorDilayani();
 
@@ -24,7 +33,7 @@ class DashboardController extends Controller
             })
             ->values();
 
-        return view('pasien.dashboard', compact('antrianAktif', 'dilayani', 'jadwals'));
+        return view('pasien.dashboard', compact('user', 'antrianAktif', 'dilayani', 'jadwals'));
     }
 
     /**

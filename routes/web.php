@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\NotifikasiController;
 use App\Http\Controllers\Admin\AdminPoliController;
 use App\Http\Controllers\Admin\DokterController;
 use App\Http\Controllers\Admin\PasienController;
@@ -69,3 +70,15 @@ Route::middleware(['auth', 'role:pasien'])->prefix('pasien')->group(function () 
     Route::post('/daftar', [PasienPoliController::class, 'submit'])
         ->name('pasien.daftar.submit');
 });
+
+// Notifikasi (tiap role memakai awalan URL sendiri supaya sidebar tampil benar)
+foreach (['admin', 'dokter', 'pasien'] as $role) {
+    Route::middleware(['auth', 'role:' . $role])->prefix($role)->group(function () use ($role) {
+        Route::get('/notifikasi', [NotifikasiController::class, 'index'])
+            ->name($role . '.notifikasi.index');
+        Route::post('/notifikasi/baca-semua', [NotifikasiController::class, 'bacaSemua'])
+            ->name($role . '.notifikasi.baca-semua');
+        Route::post('/notifikasi/{id}/baca', [NotifikasiController::class, 'baca'])
+            ->name($role . '.notifikasi.baca');
+    });
+}
