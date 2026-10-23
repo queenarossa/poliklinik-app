@@ -15,6 +15,7 @@ use App\Http\Controllers\Dokter\RiwayatPasienController;
 use App\Http\Controllers\Pasien\DashboardController as PasienDashboardController;
 use App\Http\Controllers\Pasien\PembayaranController as PasienPembayaranController;
 use App\Http\Controllers\Pasien\PoliController as PasienPoliController;
+use App\Http\Controllers\Pasien\RiwayatPendaftaranController;
 use Illuminate\Support\Facades\Route;
 
 // Public Routes
@@ -88,6 +89,12 @@ Route::middleware(['auth', 'role:pasien'])->prefix('pasien')->group(function () 
         ->name('pasien.daftar');
     Route::post('/daftar', [PasienPoliController::class, 'submit'])
         ->name('pasien.daftar.submit');
+
+    // Riwayat pendaftaran poli
+    Route::get('/riwayat-pendaftaran', [RiwayatPendaftaranController::class, 'index'])
+        ->name('pasien.riwayat.index');
+    Route::get('/riwayat-pendaftaran/{id}', [RiwayatPendaftaranController::class, 'show'])
+        ->name('pasien.riwayat.show');
 
     // Pembayaran
     Route::get('/pembayaran', [PasienPembayaranController::class, 'index'])->name('pasien.pembayaran.index');

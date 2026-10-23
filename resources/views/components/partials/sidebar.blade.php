@@ -117,6 +117,12 @@
                 Pendaftaran Periksa
             </a>
 
+            <a href="{{ route('pasien.riwayat.index') }}"
+                class="{{ $baseLink }} {{ request()->routeIs('pasien.riwayat.*') ? $active : $inactive }}">
+                <i class="fas fa-clock-rotate-left w-4 text-center"></i>
+                Riwayat Pendaftaran
+            </a>
+
             <a href="{{ route('pasien.pembayaran.index') }}"
                 class="{{ $baseLink }} {{ request()->routeIs('pasien.pembayaran.*') ? $active : $inactive }}">
                 <i class="fas fa-file-invoice-dollar w-4 text-center"></i>
